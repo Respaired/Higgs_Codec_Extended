@@ -23,8 +23,11 @@ python train_boson_mixed_precision.py --data_csv "yourdata.csv" \
                                       --use_discriminator
 ```
 
-# Inference
+# Simple Inference
 
 take a look at the notebook
 
-Happy training (~~inshallah~~).
+# Batch inference
+take a look at boson_codeit.py
+
+Happy using / training (~~inshallah~~).
