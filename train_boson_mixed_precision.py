@@ -1,8 +1,3 @@
-#!/usr/bin/env python3
-"""
-Training script for Boson Audio Codec with DAC-inspired losses
-"""
-
 import os
 import json
 import argparse
