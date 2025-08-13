@@ -14,11 +14,17 @@ a Few notes however:
 
 I will train a checkpoint on a larger enough dataset one of these days after figuring out a few things first. but the setup is solid.
 
+# Training
+
 ```bash
 python train_boson_mixed_precision.py --data_csv "yourdata.csv" \
                                       --config config.json --batch_size 42  \
                                       --use_mixed_precision \
                                       --use_discriminator
 ```
+
+# Inference
+
+take a look at the notebook
 
 Happy training (~~inshallah~~).
