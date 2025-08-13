@@ -55,7 +55,7 @@ class CosineWarmupScheduler(torch.optim.lr_scheduler._LRScheduler):
 class AudioDataset(Dataset):
     """Dataset for loading audio files from CSV"""
     def __init__(self, csv_path, sample_rate=24000, segment_duration=2.0, is_train=True):
-        self.df = pd.read_csv(csv_path)
+        self.df = pd.read_csv(csv_path) # your data should have the full path to each audio file
         self.sample_rate = sample_rate
         self.segment_duration = segment_duration
         self.segment_length = int(sample_rate * segment_duration)
