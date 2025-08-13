@@ -54,7 +54,7 @@ class CosineWarmupScheduler(torch.optim.lr_scheduler._LRScheduler):
 
 class AudioDataset(Dataset):
     """Dataset for loading audio files from CSV"""
-    def __init__(self, csv_path, sample_rate=44100, segment_duration=2.0, is_train=True):
+    def __init__(self, csv_path, sample_rate=24000, segment_duration=2.0, is_train=True):
         self.df = pd.read_csv(csv_path)
         self.sample_rate = sample_rate
         self.segment_duration = segment_duration
@@ -241,7 +241,7 @@ class BosonTrainer:
             rates=[],  # No multi-rate discriminator
             periods=[2, 3, 5, 7, 11],
             fft_sizes=[2048, 1024, 512],
-            sample_rate=self.config['sample_rate'],  # 44100
+            sample_rate=self.config['sample_rate'],  # 24000
         ).to(self.device)
         
         if self.distributed:
@@ -926,7 +926,7 @@ def main():
     # Loss arguments
     parser.add_argument('--use_discriminator', action='store_true',
                         help='Use adversarial training with discriminator')
-    parser.add_argument('--discriminator_start_step', type=int, default=25_000,
+    parser.add_argument('--discriminator_start_step', type=int, default=30_000,
                         help='Start training discriminator after N steps')
     parser.add_argument('--disc_interval', type=int, default=1,
                         help='Train discriminator every N steps')
@@ -953,7 +953,7 @@ def main():
     
     # Resume training
     parser.add_argument('--resume', action='store_true',
-                        help='Resume training from latest checkpoint')
+                        help='Resume training from latest checkpoint') # NOTE: you gotta change your desired checkpoint's name to latest.pth
     
     args = parser.parse_args()
     
