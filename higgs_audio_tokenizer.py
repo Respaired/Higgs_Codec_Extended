@@ -23,33 +23,26 @@ from semantic_module import Encoder, Decoder
 from transformers import HubertModel
 
 
-# At the top of higgs_audio_tokenizer.py, after the imports
 
 def WNConv1d(*args, **kwargs):
-    """Applies weight normalization to a 1D Convolutional layer."""
+
     return nn.utils.weight_norm(nn.Conv1d(*args, **kwargs))
 
 def WNLinear(*args, **kwargs):
-    """Applies weight normalization to a Linear layer."""
+
     return nn.utils.weight_norm(nn.Linear(*args, **kwargs))
 
 def init_weights(m):
-    """
-    Applies Xavier (Glorot) uniform initialization to Conv and Linear layers.
-    This is a robust, "classic" initialization scheme.
-    """
+
     if isinstance(m, (nn.Conv1d, nn.Conv2d)):
-        # Truncated normal initialization for convolutional layers
         nn.init.trunc_normal_(m.weight, std=0.02)
         if m.bias is not None:
             nn.init.constant_(m.bias, 0)
     elif isinstance(m, nn.Linear):
-        # Also apply to linear layers for consistency
         nn.init.trunc_normal_(m.weight, std=0.02)
         if m.bias is not None:
             nn.init.constant_(m.bias, 0)
     elif isinstance(m, nn.Embedding):
-        # Initialize the codebook gently as well
         nn.init.trunc_normal_(m.weight, std=0.02)
 
 
@@ -76,7 +69,7 @@ class HiggsAudioTokenizer(nn.Module):
         n_filters: int = 32,
         D: int = 128,
         target_bandwidths: Sequence[Union[int, float]] = [1, 1.5, 2, 4, 6],
-        ratios: Sequence[int] = [8, 5, 4, 2],  #  downsampling by 320
+        ratios: Sequence[int] = [8, 5, 4, 2],
         sample_rate: int = 16000,
         bins: int = 1024,
         n_q: int = 8,
@@ -96,7 +89,7 @@ class HiggsAudioTokenizer(nn.Module):
         self.hop_length = np.prod(ratios)
         self.semantic_techer = semantic_techer
 
-        self.frame_rate = math.ceil(sample_rate / np.prod(ratios))  # 50 Hz
+        self.frame_rate = math.ceil(sample_rate / np.prod(ratios))
 
         self.target_bandwidths = target_bandwidths
         self.n_q = n_q
@@ -106,6 +99,8 @@ class HiggsAudioTokenizer(nn.Module):
         self.decoder_2 = dac2.Decoder(D, 1024, ratios)
         self.last_layer_semantic = last_layer_semantic
         self.device = device
+
+        
         if semantic_techer == "hubert_base":
             self.semantic_model = AutoModel.from_pretrained("facebook/hubert-base-ls960")
             self.semantic_sample_rate = 16000
@@ -125,18 +120,16 @@ class HiggsAudioTokenizer(nn.Module):
             self.encoder_semantic_dim = 768
 
         elif semantic_techer == "hubert_base_general":
-            self.semantic_model = HubertModel.from_pretrained("/home/ubuntu/.cache/huggingface/hub/models--bosonai--hubert_base/snapshots/b4b85f1652c16ad63fdc818221b215b79ff55934", trust_remote_code=False)
+            self.semantic_model = HubertModel.from_pretrained("bosonai/hubert_base", trust_remote_code=False)
             self.semantic_sample_rate = 16000
             self.semantic_dim = 768
             self.encoder_semantic_dim = 768
 
-        # Overwrite semantic model sr to ensure semantic_downsample_factor is an integer
         if semantic_sample_rate is not None:
             self.semantic_sample_rate = semantic_sample_rate
 
         self.semantic_model.eval()
 
-        # make the semantic model parameters do not need gradient
         for param in self.semantic_model.parameters():
             param.requires_grad = False
 
@@ -148,19 +141,14 @@ class HiggsAudioTokenizer(nn.Module):
             code_dim=self.encoder_semantic_dim, output_channels=self.semantic_dim, decode_channels=self.semantic_dim
         )
 
-        # out_D=D+768
-        if isinstance(bins, int):  # RVQ
+        if isinstance(bins, int):
             self.quantizer = ResidualVectorQuantizer(
                 dimension=self.quantizer_dim, codebook_dim=codebook_dim, n_q=n_q, bins=bins
             )
             self.quantizer_type = "RVQ"
-        else:  # RFSQ
+        else:
             self.quantizer = ResidualFSQ(dim=self.quantizer_dim, levels=bins, num_quantizers=n_q)
             self.quantizer_type = "RFSQ"
-
-        # self.fc_prior = nn.Linear(D + self.encoder_semantic_dim, self.quantizer_dim)
-        # self.fc_post1 = nn.Linear(self.quantizer_dim, self.encoder_semantic_dim)
-        # self.fc_post2 = nn.Linear(self.quantizer_dim, D)
 
 
         self.fc_prior = WNLinear(D + self.encoder_semantic_dim, self.quantizer_dim)
@@ -212,17 +200,14 @@ class HiggsAudioTokenizer(nn.Module):
             self.semantic_techer == "hubert_base"
             or self.semantic_techer == "hubert_base_general"
             or self.semantic_techer == "wavlm_base_plus"
+            or self.semantic_techer == "mHubert_base"
         ):
             x = x[:, 0, :]
             x = F.pad(x, (160, 160))
             target = self.semantic_model(x, output_hidden_states=True).hidden_states
-            target = torch.stack(target, dim=1)  # .transpose(-1, -2)#.flatten(start_dim=1, end_dim=2)
+            target = torch.stack(target, dim=1)
 
-            # average for all layers
             target = target.mean(1)
-            # target = target[9]
-            # if self.hop_length > 320:
-            #     target = self.semantic_pooling(target.transpose(1, 2)).transpose(1, 2)
 
         elif self.semantic_techer == "w2v_bert2":
             target = self.semantic_model(x)
@@ -278,7 +263,7 @@ class HiggsAudioTokenizer(nn.Module):
 
         return o, commit_loss, semantic_recon_loss, None
 
-    def encode(self, audio_path_or_wv, sr=None, loudness_normalize=False, loudness_threshold=-23.0):
+    def encode(self, audio_path_or_wv, sr=44100, loudness_normalize=False, loudness_threshold=-23.0):
         if isinstance(audio_path_or_wv, str):
             wv, sr = librosa.load(audio_path_or_wv, mono=True, sr=None)
         else:
@@ -336,7 +321,6 @@ class HiggsAudioTokenizer(nn.Module):
             quantized, codes = self.quantizer(e)
             codes = codes.permute(0, 2, 1)
 
-        # return codes
         return EncodedResult(codes)
 
     def decode(self, vq_code: torch.Tensor) -> torch.Tensor:
@@ -353,21 +337,21 @@ class HiggsAudioTokenizer(nn.Module):
         return o.cpu().numpy()
 
 
-def load_higgs_audio_tokenizer(tokenizer_name_or_path, device="cuda"):
-    is_local = os.path.exists(tokenizer_name_or_path)
-    if not is_local:
-        tokenizer_path = snapshot_download(tokenizer_name_or_path)
-    else:
-        tokenizer_path = tokenizer_name_or_path
-    config_path = os.path.join(tokenizer_path, "config.json")
-    model_path = os.path.join(tokenizer_path, "model.pth")
-    config = json.load(open(config_path))
-    model = HiggsAudioTokenizer(
-        **config,
-        device=device,
-    )
-    parameter_dict = torch.load(model_path, map_location=device, weights_only=False)
-    model.load_state_dict(parameter_dict, strict=False)
-    model.to(device)
-    model.eval()
-    return model
+# def load_higgs_audio_tokenizer(tokenizer_name_or_path, device="cuda"): # not used here due to changes
+#     is_local = os.path.exists(tokenizer_name_or_path)
+#     if not is_local:
+#         tokenizer_path = snapshot_download(tokenizer_name_or_path)
+#     else:
+#         tokenizer_path = tokenizer_name_or_path
+#     config_path = os.path.join(tokenizer_path, "config.json")
+#     model_path = os.path.join(tokenizer_path, "model.pth")
+#     config = json.load(open(config_path))
+#     model = HiggsAudioTokenizer(
+#         **config,
+#         device=device,
+#     )
+#     parameter_dict = torch.load(model_path, map_location=device, weights_only=False)
+#     model.load_state_dict(parameter_dict, strict=False)
+#     model.to(device)
+#     model.eval()
+#     return model
