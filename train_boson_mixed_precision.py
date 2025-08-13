@@ -81,21 +81,20 @@ class AudioDataset(Dataset):
         audio_path = self.audio_paths[idx]
         
         try:
-            # Load audio using librosa
+      
             audio, sr = librosa.load(audio_path, sr=self.sample_rate, mono=True)
             
-            # Random segment extraction for training
+  =
             if len(audio) > self.segment_length:
                 if self.is_train:
                     start = random.randint(0, len(audio) - self.segment_length)
                 else:
-                    start = 0  # Always use beginning for validation
+                    start = 0 =
                 audio = audio[start:start + self.segment_length]
             else:
                 # Pad if too short
                 audio = np.pad(audio, (0, self.segment_length - len(audio)))
-            
-            # Convert to tensor and add batch dimension
+     
             audio_tensor = torch.FloatTensor(audio).unsqueeze(0)
             
             return audio_tensor, audio_path
@@ -242,7 +241,7 @@ class BosonTrainer:
     #     return discriminator
         
     def build_discriminator(self):
-        """Build discriminator with DDP if needed"""
+     
         discriminator = Discriminator(
             rates=[],  # No multi-rate discriminator
             periods=[2, 3, 5, 7, 11],
@@ -257,7 +256,7 @@ class BosonTrainer:
         return discriminator
     
     def setup_losses(self):
-        """Setup all loss functions"""
+
         # Basic losses
         self.l1_loss = L1Loss()
         self.stft_loss = MultiScaleSTFTLoss(
@@ -277,16 +276,15 @@ class BosonTrainer:
             log_weight=1.0,
         )
         
-        # GAN loss if using discriminator
+ 
         if self.discriminator is not None:
             self.gan_loss = GANLoss(self.discriminator)
         
-        # Loss weights (matching DAC's proven configuration)
+   
         self.loss_weights = {
             'rec': 1.,  # Waveform L1 loss
             'stft': 1.,  # Multi-scale STFT loss
-            'mel': 45.0,  # Mel-spectrogram loss (DISABLED)
-            #'mel': 0.0,  # Mel-spectrogram loss (DISABLED)
+            'mel': 45.0,  # Mel-spectrogram loss
             'commit': 0.25,  # Commitment loss
             'semantic': 1.,  # Semantic loss
             'gen': 1.,  # Generator adversarial loss
@@ -294,7 +292,7 @@ class BosonTrainer:
         }
     
     def setup_data_loaders(self):
-        """Setup data loaders (distributed or single GPU)"""
+
         # Split data into train/val
         df = pd.read_csv(self.args.data_csv)
         n_total = len(df)
@@ -308,7 +306,7 @@ class BosonTrainer:
             df[:n_train].to_csv(train_csv, index=False)
             df[n_train:].to_csv(val_csv, index=False)
         
-        # Synchronize across processes if distributed
+
         if self.distributed:
             dist.barrier()
         
@@ -392,11 +390,11 @@ class BosonTrainer:
                 output, commit_loss, semantic_loss, _ = self.model(audio, bw)
                 recons_signal = AudioSignal(output, self.config['sample_rate'])
             
-            # Check if discriminator should be active (after discriminator_start_step)
+
             use_discriminator = (self.discriminator is not None and 
                                 self.global_step >= self.args.discriminator_start_step)
             
-            # Train discriminator first if using GAN and past the start step
+
             if use_discriminator and self.global_step % self.args.disc_interval == 0:
                 self.optimizer_d.zero_grad()
                 
@@ -426,7 +424,7 @@ class BosonTrainer:
                 losses['rec'] = self.l1_loss(recons_signal, audio_signal)
                 losses['stft'] = self.stft_loss(recons_signal, audio_signal)
                 losses['mel'] = self.mel_loss(recons_signal, audio_signal)
-                # losses['mel'] = torch.tensor(0.0, device=self.device) # 15.
+                # losses['mel'] = torch.tensor(0.0, device=self.device) # uncomment this for the first 30k steps, it's faster if you pretrain it on semantic / commit loss first
                 losses['commit'] = commit_loss
                 losses['semantic'] = semantic_loss
                 
@@ -513,7 +511,7 @@ class BosonTrainer:
             'commit': 0, 'semantic': 0
         }
         
-        # Store audio samples for tensorboard
+
         audio_samples = {'train': [], 'val': []}
         
         for batch_idx, (audio, paths) in enumerate(tqdm(self.val_loader, desc='Validation', disable=not self.is_main_process())):
@@ -712,7 +710,7 @@ class BosonTrainer:
 
 
     def load_checkpoint(self):
-        """Load checkpoint with proper state restoration"""
+
         checkpoint_path = os.path.join(self.args.output_dir, 'checkpoints', 'latest.pth')
         if os.path.exists(checkpoint_path):
             print(f"Loading checkpoint from {checkpoint_path}")
@@ -734,7 +732,7 @@ class BosonTrainer:
             if 'scheduler_g_last_epoch' in checkpoint:
                 self.scheduler_g.last_epoch = checkpoint['scheduler_g_last_epoch']
             else:
-                # Fallback: use global_step if the explicit value wasn't saved
+             
                 self.scheduler_g.last_epoch = checkpoint['global_step']
             
             # Force scheduler to recompute its internal state
@@ -761,7 +759,7 @@ class BosonTrainer:
                 
                 self.scheduler_d._last_lr = self.scheduler_d.get_lr()
                 
-                # Load discriminator gradient scaler state if using mixed precision
+            
                 if self.scaler_d is not None and 'scaler_d_state_dict' in checkpoint:
                     self.scaler_d.load_state_dict(checkpoint['scaler_d_state_dict'])
             
@@ -798,7 +796,7 @@ class BosonTrainer:
             print(f"Next step checkpoint at: step {((self.global_step // self.args.save_step_interval) + 1) * self.args.save_step_interval}")
             print(f"{'='*60}\n")
             
-            # Double-check by creating a fresh scheduler and comparing
+  g
             if self.global_step > 0:
                 temp_scheduler = CosineWarmupScheduler(
                     self.optimizer_g, 
