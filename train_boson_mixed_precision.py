@@ -20,14 +20,14 @@ import librosa
 from tqdm import tqdm
 from audiotools import AudioSignal, STFTParams
 
-# Import from the provided codebase
+
 from higgs_audio_tokenizer import HiggsAudioTokenizer
 from quantization.distrib import broadcast_tensors, sync_buffer, is_distributed, world_size, rank
 from quantization.ddp_utils import set_random_seed, is_logging_process, get_timestamp
 
-# Import DAC losses and discriminator
+
 import sys
-sys.path.append('.')  # Add current directory to path
+sys.path.append('.')
 from loss import L1Loss, MultiScaleSTFTLoss, MelSpectrogramLoss, GANLoss
 from discriminator import Discriminator
 
