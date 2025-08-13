@@ -1,0 +1,11 @@
+{
+  "n_filters": 32,
+  "D": 256,
+  "codebook_dim": 64,
+  "target_bandwidths": [0.5, 1, 1.5, 2, 4],
+  "ratios": [8, 5, 4, 2, 3],
+  "sample_rate": 24000,
+  "bins": 1024,
+  "n_q": 8,
+  "semantic_techer": "mHubert_base" # or hubert_base_general
+}
