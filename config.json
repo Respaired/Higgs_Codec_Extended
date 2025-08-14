@@ -7,5 +7,5 @@
   "sample_rate": 24000,
   "bins": 1024,
   "n_q": 8,
-  "semantic_techer": "mHubert_base" # or hubert_base_general
+  "semantic_techer": "mHubert_base"
 }
