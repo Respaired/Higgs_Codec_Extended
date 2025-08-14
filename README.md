@@ -5,6 +5,9 @@ tags:
 - audio_tokenizer
 - audio_codec
 ---
+<br><br>
+[Hugging Face 🤗](https://huggingface.co/Respair/Higgs_Codec_Extended) <br>
+
 
 This is an on-going project. it is a modified version of Higgs-Boson audio tokenizer, you can fully train it. all scripts have been tested. 
 a Few notes however:
