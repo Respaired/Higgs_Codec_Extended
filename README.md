@@ -22,6 +22,7 @@ a Few notes however:
 
 I will train a checkpoint on a larger enough dataset one of these days after figuring out a few things first. but the setup is solid.
 
+**NOTE: the none-ddp version seem to be more stable.**
 # Training
 
 ```bash
