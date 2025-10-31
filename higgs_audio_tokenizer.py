@@ -151,11 +151,14 @@ class HiggsAudioTokenizer(nn.Module):
             self.quantizer_type = "RFSQ"
 
 
-        self.fc_prior = WNLinear(D + self.encoder_semantic_dim, self.quantizer_dim)
-        self.fc_post1 = WNLinear(self.quantizer_dim, self.encoder_semantic_dim)
-        self.fc_post2 = WNLinear(self.quantizer_dim, D)
+        # self.fc_prior = WNLinear(D + self.encoder_semantic_dim, self.quantizer_dim)
+        # self.fc_post1 = WNLinear(self.quantizer_dim, self.encoder_semantic_dim)
+        # self.fc_post2 = WNLinear(self.quantizer_dim, D)
         
-        
+        self.fc_prior = nn.Linear(D + self.encoder_semantic_dim, self.quantizer_dim)
+        self.fc_post1 = nn.Linear(self.quantizer_dim, self.encoder_semantic_dim)
+        self.fc_post2 = nn.Linear(self.quantizer_dim, D)
+
         self.downsample_mode = downsample_mode
         if downsample_mode == "avg":
             self.semantic_pooling = nn.AvgPool1d(
